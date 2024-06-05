@@ -1,4 +1,5 @@
 # news/tests/test_trial.py
+'''
 from django.test import TestCase
 
 from news.models import News
@@ -24,4 +25,4 @@ class TestNews(TestCase):
     def test_title(self):
         # Чтобы проверить равенство с константой -
         # обращаемся к ней через self, а не через cls:
-        self.assertEqual(self.news.title, self.TITLE)
+        self.assertEqual(self.news.title, self.TITLE)'''
