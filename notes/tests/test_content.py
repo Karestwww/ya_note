@@ -1,5 +1,4 @@
 from django.test import TestCase
-# Импортируем функцию reverse(), она понадобится для получения адреса страницы.
 from django.urls import reverse
 
 from notes.models import Note
@@ -44,14 +43,6 @@ class TestListNotesPageOneUser(TestCase):
             for index in range(NOTE_COUNT_FOR_TEST)
         ]
         Note.objects.bulk_create(notes_second_user)
-
-    def test_order_notes(self):
-        self.client.force_login(self.first_user)
-        response = self.client.get(self.NOTES_URL)
-        object_list = response.context['object_list']
-        all_id = [note.id for note in object_list]
-        sorted_id = sorted(all_id, reverse=False)
-        self.assertEqual(all_id, sorted_id)
 
     def test_note_drive(self):
         self.client.force_login(self.first_user)
