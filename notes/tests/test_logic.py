@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from notes.models import Note
 from notes.forms import WARNING
-from pytils.translit import slugify # type: ignore
+from pytils.translit import slugify
 
 User = get_user_model()
 
@@ -37,7 +37,7 @@ class TestNoteCreation(TestCase):
         self.auth_client.post(self.url, data=self.form_data)
         notes_count = Note.objects.count()
         # Проверяем, что кол-во заметок увеличилось на 1
-        self.assertEqual(notes_count, notes_count_start_test+1)
+        self.assertEqual(notes_count, notes_count_start_test + 1)
 
     def test_note_cant_equal_slug(self):
         self.auth_client.post(self.url, data=self.form_data)
@@ -46,7 +46,7 @@ class TestNoteCreation(TestCase):
             response,
             form='form',
             field='slug',
-            errors=self.NOTE_SLUG+WARNING,)
+            errors=self.NOTE_SLUG + WARNING,)
         comments_count = Note.objects.count()
         self.assertEqual(comments_count, 1)
 
@@ -69,7 +69,7 @@ class TestCreationStandartSlug(TestCase):
         self.auth_client.post(self.url, data=self.form_data)
         notes_count = Note.objects.count()
         # Проверяем, что кол-во заметок увеличилось на 1
-        self.assertEqual(notes_count, notes_count_start_test+1)
+        self.assertEqual(notes_count, notes_count_start_test + 1)
         # Получаем созданную заметку из базы
         new_note = Note.objects.get()
         # Создаем слаг согласно логике модели
@@ -77,12 +77,12 @@ class TestCreationStandartSlug(TestCase):
         # Проверяем, что slug сформировался ожидаемым
         self.assertEqual(new_note.slug, expected_slug)
 
+
 class TestNoteEditDelete(TestCase):
     NOTE_TITLE = 'Тестовая заметка'
     NOTE_TEXT = 'Текст тестовой заметки'
     NEW_TITLE = 'Измененная заметка'
     NEW_NOTE_TEXT = 'Текст изменненой заметки'
-
 
     @classmethod
     def setUpTestData(cls):
@@ -100,9 +100,9 @@ class TestNoteEditDelete(TestCase):
             text=cls.NOTE_TEXT,
             author=cls.author,)
         # Определяем URL для редактирования заметки.
-        cls.edit_url = reverse('notes:edit', args=(cls.note.slug,)) 
+        cls.edit_url = reverse('notes:edit', args=(cls.note.slug,))
         # Определяем URL для удаления заметки.
-        cls.delete_url = reverse('notes:delete', args=(cls.note.slug,))  
+        cls.delete_url = reverse('notes:delete', args=(cls.note.slug,))
         # Формируем данные для POST-запроса для обновления заметки.
         cls.form_data = {'title': cls.NEW_TITLE, 'text': cls.NEW_NOTE_TEXT}
 
@@ -114,7 +114,7 @@ class TestNoteEditDelete(TestCase):
         # Считаем количество заметок в системе.
         notes_count = Note.objects.count()
         # Проверяем, что кол-во заметок уменьшилось на 1
-        self.assertEqual(notes_count, notes_count_start_test-1)
+        self.assertEqual(notes_count, notes_count_start_test - 1)
 
     def test_reader_cant_delete_note(self):
         # Фиксируем кол-во заметок (не зависить от входных данных)

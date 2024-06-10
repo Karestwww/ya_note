@@ -38,7 +38,7 @@ class TestListNotesPageOneUser(TestCase):
                 title=f'Заметка {cls.second_user} № {index}',
                 text=f'Текст заметки {index}',
                 author=cls.second_user,
-                slug=index+NOTE_COUNT_FOR_TEST,
+                slug=index + NOTE_COUNT_FOR_TEST,
             )
             for index in range(NOTE_COUNT_FOR_TEST)
         ]
@@ -68,7 +68,6 @@ class TestListNotesPageOneUser(TestCase):
         url = reverse('notes:add')
         response = self.client.get(url)
         self.assertIn('form', response.context)
-        
         urls = (
             ('notes:add', None),
             ('notes:edit', (self.note.slug,)),
