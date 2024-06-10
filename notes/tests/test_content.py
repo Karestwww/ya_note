@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from notes.models import Note
@@ -9,72 +9,93 @@ from notes.forms import NoteForm
 User = get_user_model()
 
 NOTE_COUNT_FOR_TEST = 10
+NOTE_SLUG = 'Test_slug'
+NOTE_TITLE = 'Тестовая заметка'
+NOTE_TEXT = 'Текст тестовой заметки'
+NEW_TITLE = 'Измененная заметка'
+NEW_NOTE_TEXT = 'Текст изменненой заметки'
 
-
-class TestListNotesPageOneUser(TestCase):
-    NOTES_URL = reverse('notes:list')
+class NotesUrls(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.first_user = User.objects.create(username='Лев Толстой')
-        cls.second_user = User.objects.create(username='Анжей Ясинский')
-        notes_first_user = [
+        cls.author = User.objects.create(username='Автор')
+        cls.reader = User.objects.create(username='Читатель простой')
+        cls.author_client = Client()
+        cls.reader_client = Client()
+        cls.author_client.force_login(cls.author)
+        cls.reader_client.force_login(cls.reader)
+        cls.form_data = {'title': NOTE_TITLE,
+                         'text': NOTE_TEXT,
+                         'slug': NOTE_SLUG}
+        cls.form_data_new = {'title': NEW_TITLE,
+                             'text': NEW_NOTE_TEXT}
+        notes_author = [
             Note(
-                title=f'Заметка {cls.first_user} № {index}',
+                title=f'Заметка {cls.author} № {index}',
                 text=f'Текст заметки {index}',
-                author=cls.first_user,
+                author=cls.author,
                 slug=index,
             )
             for index in range(NOTE_COUNT_FOR_TEST)
         ]
-        Note.objects.bulk_create(notes_first_user)
-        # Создаем тестовую заметку
+        Note.objects.bulk_create(notes_author)
+        # Создаем одиночную заметку
         cls.note = Note.objects.create(
-            title='Тест передачи отдельной заметки',
-            text='Текст',
-            author=cls.first_user,)
-        notes_second_user = [
+            title=NOTE_TITLE,
+            text=NOTE_TEXT,
+            author=cls.author,)
+        notes_reader = [
             Note(
-                title=f'Заметка {cls.second_user} № {index}',
+                title=f'Заметка {cls.reader} № {index}',
                 text=f'Текст заметки {index}',
-                author=cls.second_user,
+                author=cls.reader,
                 slug=index + NOTE_COUNT_FOR_TEST,
             )
             for index in range(NOTE_COUNT_FOR_TEST)
         ]
-        Note.objects.bulk_create(notes_second_user)
+        Note.objects.bulk_create(notes_reader)
+        cls.add_url = reverse('notes:add')
+        cls.detail_url = reverse('notes:detail', args=(cls.note.slug,))
+        cls.delete_url = reverse('notes:delete', args=(cls.note.slug,))
+        cls.edit_url = reverse('notes:edit', args=(cls.note.slug,))
+        cls.home_url = reverse('notes:home')
+        cls.list_url = reverse('notes:list')
+        cls.login_url = reverse('users:login')
+        cls.logout_url = reverse('users:logout')
+        cls.signup_url = reverse('users:signup')
+        cls.success_url = reverse('notes:success')
+
+
+class TestListNotesPageOneUser(NotesUrls):
+
+
+    def test_notes_order(self):
+        '''Проверка порядка вывода заметок.'''
+        response = self.author_client.get(self.list_url)
+        authors_notes = response.context['object_list']
+        id_in_authors_notes = [note.id for note in authors_notes]
+        sorted_id = sorted(id_in_authors_notes)
+        self.assertEqual(id_in_authors_notes, sorted_id)
 
     def test_note_drive(self):
-        self.client.force_login(self.first_user)
-        response = self.client.get(self.NOTES_URL)
-        object_list = response.context['object_list']
-        all_title = [note.title for note in object_list]
-        self.assertIn('Тест передачи отдельной заметки', all_title)
+        '''Проверка наличия одиночной заметки автора в его списке заметок.'''
+        response = self.author_client.get(self.list_url)
+        authors_notes = response.context['object_list']
+        self.assertIn(self.note, authors_notes)
 
-    def test_notes_first_out_second_users(self):
-        self.client.force_login(self.first_user)
-        response = self.client.get(self.NOTES_URL)
-        object_list = response.context['object_list']
-        all_title_first_user = [note.title for note in object_list]
-        self.client.force_login(self.second_user)
-        response = self.client.get(self.NOTES_URL)
-        object_list = response.context['object_list']
-        all_title_second_user = [note.title for note in object_list]
-        for title in all_title_first_user:
-            self.assertNotIn(title, all_title_second_user)
+    def test_notes_author_out_notes_reader(self):
+        '''Проверка в списке заметок автора нет заметок где автор читатель.'''
+        response = self.author_client.get(self.list_url)
+        authors_notes = response.context['object_list']
+        authors_in_authors_notes = [note.author for note in authors_notes]
+        self.assertNotIn(self.reader, authors_in_authors_notes)
+        self.assertIn(self.author, authors_in_authors_notes)
 
     def test_pages_contains_form(self):
-        self.client.force_login(self.first_user)
-        url = reverse('notes:add')
-        response = self.client.get(url)
-        self.assertIn('form', response.context)
-        urls = (
-            ('notes:add', None),
-            ('notes:edit', (self.note.slug,)),
-        )
-        for name, args in urls:
-            with self.subTest(name=name):
-                url = reverse(name, args=args)
-                response = self.client.get(url)
+        urls = (self.add_url, self.edit_url,)
+        for url in urls:
+            with self.subTest(url=url):
+                response = self.author_client.get(url)
                 self.assertIn('form', response.context)
                 self.assertIsInstance(response.context['form'], NoteForm)
